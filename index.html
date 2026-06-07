@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DPR Generator — First Fix</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;
+  --surface:#161921;
+  --surface2:#1e2230;
+  --border:#2a2f42;
+  --gold:#c9a84c;
+  --gold2:#e8c86a;
+  --blue:#2E75B6;
+  --text:#e8eaf0;
+  --muted:#6b7280;
+  --radius:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:0}
+
+/* Header */
+.header{
+  background:linear-gradient(135deg,#0d0f14 0%,#161921 100%);
+  border-bottom:1px solid var(--border);
+  padding:24px 40px;
+  display:flex;align-items:center;gap:16px;
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(12px);
+}
+.header-logo{
+  width:36px;height:36px;background:var(--gold);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#0d0f14;
+}
+.header-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--text)}
+.header-sub{font-size:13px;color:var(--muted);margin-left:auto;font-family:'DM Mono',monospace}
+
+/* Layout */
+.main{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+
+/* Section title */
+.section-label{
+  font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Card */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px;margin-bottom:20px;
+  transition:border-color .2s;
+}
+.card:hover{border-color:var(--border)}
+
+/* Grid */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* Input */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.05em}
+.field input,.field select{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+  transition:border-color .2s;
+}
+.field input:focus,.field select:focus{border-color:var(--gold)}
+.field input::placeholder{color:var(--muted)}
+
+/* Drop zone */
+.drop-zone{
+  border:2px dashed var(--border);border-radius:var(--radius);
+  padding:32px;text-align:center;cursor:pointer;
+  transition:all .2s;position:relative;
+}
+.drop-zone:hover,.drop-zone.drag-over{
+  border-color:var(--gold);background:rgba(201,168,76,.04);
+}
+.drop-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.drop-icon{font-size:32px;margin-bottom:10px}
+.drop-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+.drop-sub{font-size:12px;color:var(--muted)}
+
+/* File list */
+.file-list{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.file-item{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:13px;
+}
+.file-item .fi-icon{color:var(--gold);font-size:16px}
+.file-item .fi-name{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-item .fi-remove{color:var(--muted);cursor:pointer;font-size:16px;transition:color .2s;background:none;border:none;padding:0}
+.file-item .fi-remove:hover{color:#ef4444}
+
+/* Photo grid */
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px}
+.photo-thumb{
+  aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;
+  border:1px solid var(--border);
+}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb .ph-remove{
+  position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);
+  border:none;border-radius:50%;width:22px;height:22px;color:#fff;
+  cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;
+}
+
+/* Generate button */
+.btn-generate{
+  width:100%;padding:18px;border:none;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);
+  color:#0d0f14;font-family:'Syne',sans-serif;font-weight:700;
+  font-size:17px;cursor:pointer;transition:all .2s;letter-spacing:.02em;
+  position:relative;overflow:hidden;
+}
+.btn-generate:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(201,168,76,.3)}
+.btn-generate:active{transform:translateY(0)}
+.btn-generate:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Progress */
+.progress-wrap{display:none;margin-top:20px}
+.progress-wrap.show{display:block}
+.progress-bar{
+  height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:10px;
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));
+  border-radius:2px;width:0%;transition:width .3s;
+}
+.progress-msg{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center}
+
+/* Result */
+.result-card{
+  background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.3);
+  border-radius:var(--radius);padding:24px;margin-top:20px;
+  display:none;text-align:center;
+}
+.result-card.show{display:block}
+.result-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--gold);margin-bottom:16px}
+.download-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-dl{
+  padding:12px 28px;border-radius:8px;font-family:'Syne',sans-serif;
+  font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;
+  text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-dl-pdf{background:var(--gold);color:#0d0f14;border:none}
+.btn-dl-word{background:transparent;color:var(--gold);border:2px solid var(--gold)}
+.btn-dl:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,168,76,.25)}
+
+/* Error */
+.error-msg{
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);
+  border-radius:8px;padding:14px 18px;color:#ef4444;font-size:13px;
+  margin-top:16px;display:none;
+}
+.error-msg.show{display:block}
+
+/* Tooltip badge */
+.badge{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.08em;
+  background:rgba(201,168,76,.15);color:var(--gold);text-transform:uppercase;
+}
+
+@media(max-width:600px){
+  .header{padding:16px 20px}
+  .main{padding:24px 16px 60px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">FF</div>
+  <div class="header-title">DPR Generator</div>
+  <div class="header-sub">First Fix × MBL</div>
+</div>
+
+<div class="main">
+
+  <!-- Report Info -->
+  <div class="section-label">Report Information</div>
+  <div class="card">
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="field">
+        <label>Report Date</label>
+        <input type="date" id="reportDate"/>
+      </div>
+      <div class="field">
+        <label>Report Number</label>
+        <input type="text" id="reportNo" placeholder="e.g. 172"/>
+      </div>
+      <div class="field">
+        <label>Package</label>
+        <input type="text" id="package" value="MEP"/>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Supervision <span class="badge">e.g. 2+8</span></label>
+        <input type="text" id="supervision" placeholder="2+8"/>
+      </div>
+      <div class="field">
+        <label>Labors (Total)</label>
+        <input type="number" id="labors" placeholder="100"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Excel Files -->
+  <div class="section-label">Foreman Excel Files</div>
+  <div class="card">
+    <div class="drop-zone" id="excelDrop">
+      <input type="file" id="excelInput" accept=".xlsx,.xls" multiple/>
+      <div class="drop-icon">📊</div>
+      <div class="drop-title">Drop Excel files here</div>
+      <div class="drop-sub">or click to browse — supports multiple files</div>
+    </div>
+    <div class="file-list" id="excelList"></div>
+  </div>
+
+  <!-- Photos -->
+  <div class="section-label">Site Photos</div>
+  <div class="card">
+    <div class="drop-zone" id="photoDrop">
+      <input type="file" id="photoInput" accept="image/*" multiple/>
+      <div class="drop-icon">📸</div>
+      <div class="drop-title">Drop site photos here</div>
+      <div class="drop-sub">or click to browse — JPG, PNG supported</div>
+    </div>
+    <div class="photo-grid" id="photoGrid"></div>
+  </div>
+
+  <!-- Generate -->
+  <button class="btn-generate" id="generateBtn" onclick="generate()">
+    ⚡ Generate Daily Report
+  </button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-msg" id="progressMsg">Reading files...</div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-title">✅ Report Ready!</div>
+    <div class="download-btns">
+      <a class="btn-dl btn-dl-pdf" id="dlPdf" href="#" download>⬇ Download PDF</a>
+      <a class="btn-dl btn-dl-word" id="dlWord" href="#" download>⬇ Download Word</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──
+let excelFiles = [];
+let photoFiles = [];
+
+// ── Set default date to yesterday ──
+const yesterday = new Date();
+yesterday.setDate(yesterday.getDate() - 1);
+document.getElementById('reportDate').value = yesterday.toISOString().split('T')[0];
+
+// ── Excel drop ──
+const excelInput = document.getElementById('excelInput');
+const excelDrop  = document.getElementById('excelDrop');
+const excelList  = document.getElementById('excelList');
+
+excelInput.addEventListener('change', e => addExcel([...e.target.files]));
+excelDrop.addEventListener('dragover',  e => { e.preventDefault(); excelDrop.classList.add('drag-over'); });
+excelDrop.addEventListener('dragleave', () => excelDrop.classList.remove('drag-over'));
+excelDrop.addEventListener('drop', e => {
+  e.preventDefault(); excelDrop.classList.remove('drag-over');
+  addExcel([...e.dataTransfer.files].filter(f => f.name.match(/\.xlsx?$/i)));
+});
+
+function addExcel(files) {
+  files.forEach(f => { if (!excelFiles.find(x => x.name === f.name)) excelFiles.push(f); });
+  renderExcelList();
+}
+
+function renderExcelList() {
+  excelList.innerHTML = excelFiles.map((f, i) => `
+    <div class="file-item">
+      <span class="fi-icon">📄</span>
+      <span class="fi-name">${f.name}</span>
+      <button class="fi-remove" onclick="removeExcel(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeExcel(i) { excelFiles.splice(i, 1); renderExcelList(); }
+
+// ── Photo drop ──
+const photoInput = document.getElementById('photoInput');
+const photoDrop  = document.getElementById('photoDrop');
+const photoGrid  = document.getElementById('photoGrid');
+
+photoInput.addEventListener('change', e => addPhotos([...e.target.files]));
+photoDrop.addEventListener('dragover',  e => { e.preventDefault(); photoDrop.classList.add('drag-over'); });
+photoDrop.addEventListener('dragleave', () => photoDrop.classList.remove('drag-over'));
+photoDrop.addEventListener('drop', e => {
+  e.preventDefault(); photoDrop.classList.remove('drag-over');
+  addPhotos([...e.dataTransfer.files].filter(f => f.type.startsWith('image/')));
+});
+
+function addPhotos(files) {
+  files.forEach(f => { if (!photoFiles.find(x => x.name === f.name)) photoFiles.push(f); });
+  renderPhotoGrid();
+}
+
+function renderPhotoGrid() {
+  photoGrid.innerHTML = '';
+  photoFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `<img src="${url}"/><button class="ph-remove" onclick="removePhoto(${i})">✕</button>`;
+    photoGrid.appendChild(div);
+  });
+}
+
+function removePhoto(i) { photoFiles.splice(i, 1); renderPhotoGrid(); }
+
+// ── Progress ──
+function setProgress(pct, msg) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressMsg').textContent = msg;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Generate ──
+async function generate() {
+  const date       = document.getElementById('reportDate').value;
+  const reportNo   = document.getElementById('reportNo').value.trim();
+  const supervision= document.getElementById('supervision').value.trim();
+  const labors     = document.getElementById('labors').value.trim();
+
+  // Validate
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('resultCard').classList.remove('show');
+  if (!date)       return showError('Please enter the report date.');
+  if (!reportNo)   return showError('Please enter the report number.');
+  if (!supervision)return showError('Please enter supervision count.');
+  if (!labors)     return showError('Please enter labor count.');
+  if (excelFiles.length === 0) return showError('Please upload at least one Excel file.');
+
+  // Show progress
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('generateBtn').disabled = true;
+  setProgress(10, 'Reading Excel files...');
+
+  try {
+    const formData = new FormData();
+    formData.append('date', date);
+    formData.append('reportNo', reportNo);
+    formData.append('supervision', supervision);
+    formData.append('labors', labors);
+    formData.append('package', document.getElementById('package').value);
+    excelFiles.forEach(f => formData.append('excel', f));
+    photoFiles.forEach(f => formData.append('photos', f));
+
+    setProgress(30, 'Uploading files...');
+
+    const res = await fetch('/api/generate', { method: 'POST', body: formData });
+    setProgress(70, 'Generating report...');
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Server error');
+    }
+
+    const blob = await res.blob();
+    setProgress(100, 'Done!');
+
+    // The API returns a zip with both files
+    const url = URL.createObjectURL(blob);
+    document.getElementById('dlPdf').href  = url;
+    document.getElementById('dlPdf').download  = `DPR_${reportNo}.pdf`;
+    document.getElementById('dlWord').href = url;
+    document.getElementById('dlWord').download = `DPR_${reportNo}.docx`;
+
+    // Actually we get two separate links — handle below
+    document.getElementById('resultCard').classList.add('show');
+
+  } catch(e) {
+    showError('Error: ' + e.message);
+  } finally {
+    document.getElementById('generateBtn').disabled = false;
+    setTimeout(() => {
+      document.getElementById('progressWrap').classList.remove('show');
+      setProgress(0, '');
+    }, 2000);
+  }
+}
+</script>
+</body>
+</html>
