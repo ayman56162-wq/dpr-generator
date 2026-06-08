@@ -321,7 +321,7 @@ module.exports = async (req, res) => {
     }
 
     // Logo path (bundled with app)
-    const logoPath = path.join(__dirname, '..', 'public', 'logo.png');
+    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
 
     const photoPaths = photoArr.map(f => f.filepath || f.path);
 
