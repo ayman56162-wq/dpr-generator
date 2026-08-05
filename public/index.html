@@ -385,17 +385,25 @@ async function generate() {
       throw new Error(err.error || 'Server error');
     }
 
-    const blob = await res.blob();
+    const data = await res.json();
     setProgress(100, 'Done!');
 
-    // The API returns a zip with both files
-    const url = URL.createObjectURL(blob);
-    document.getElementById('dlPdf').href  = url;
-    document.getElementById('dlPdf').download  = `DPR_${reportNo}.pdf`;
-    document.getElementById('dlWord').href = url;
-    document.getElementById('dlWord').download = `DPR_${reportNo}.docx`;
+    // Convert base64 to Blobs
+    const b64ToBlob = (b64, mime) => {
+      const bytes = atob(b64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    };
 
-    // Actually we get two separate links — handle below
+    const pdfBlob  = b64ToBlob(data.pdf,  'application/pdf');
+    const docxBlob = b64ToBlob(data.docx, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+    document.getElementById('dlPdf').href      = URL.createObjectURL(pdfBlob);
+    document.getElementById('dlPdf').download  = `${data.filename}.pdf`;
+    document.getElementById('dlWord').href     = URL.createObjectURL(docxBlob);
+    document.getElementById('dlWord').download = `${data.filename}.docx`;
+
     document.getElementById('resultCard').classList.add('show');
 
   } catch(e) {
