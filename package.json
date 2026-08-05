@@ -4,6 +4,7 @@
   "dependencies": {
     "docx": "^9.6.1",
     "formidable": "^3.5.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "pdf-lib": "^1.17.1"
   }
 }
