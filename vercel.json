@@ -1,9 +1,16 @@
 {
   "version": 2,
-  "outputDirectory": "public",
-  "functions": {
-    "api/generate.js": {
-      "maxDuration": 30
+  "routes": [
+    {
+      "src": "/api/generate",
+      "dest": "/api/generate.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
-  }
+  ]
 }
