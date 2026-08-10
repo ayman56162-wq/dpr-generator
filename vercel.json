@@ -6,11 +6,12 @@
       "dest": "/api/generate.js"
     },
     {
-      "handle": "filesystem"
+      "src": "/logo.png",
+      "dest": "/public/logo.png"
     },
     {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "src": "/",
+      "dest": "/index.html"
     }
   ]
 }
