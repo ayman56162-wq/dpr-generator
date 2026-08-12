@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DPR Generator — First Fix</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#161921;--surface2:#1e2230;--border:#2a2f42;
+  --gold:#c9a84c;--gold2:#e8c86a;--blue:#2E75B6;--text:#e8eaf0;
+  --muted:#6b7280;--radius:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+.header{background:linear-gradient(135deg,#0d0f14,#161921);border-bottom:1px solid var(--border);padding:20px 40px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100}
+.header-logo{width:36px;height:36px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#0d0f14}
+.header-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
+.header-sub{font-size:13px;color:var(--muted);margin-left:auto;font-family:'DM Mono',monospace}
+.main{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+.section-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.field input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--gold)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-family:'DM Mono',monospace;background:rgba(201,168,76,.15);color:var(--gold);text-transform:uppercase}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:rgba(201,168,76,.04)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:32px;margin-bottom:10px}
+.drop-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;margin-bottom:4px}
+.drop-sub{font-size:12px;color:var(--muted)}
+.file-list{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.file-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:13px}
+.fi-icon{color:var(--gold);font-size:16px}
+.fi-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fi-remove{color:var(--muted);cursor:pointer;font-size:16px;background:none;border:none;padding:0}
+.fi-remove:hover{color:#ef4444}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px}
+.photo-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--border)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-thumb .ph-remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;border-radius:50%;width:22px;height:22px;color:#fff;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.btn-generate{width:100%;padding:18px;border:none;border-radius:var(--radius);background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0d0f14;font-family:'Syne',sans-serif;font-weight:700;font-size:17px;cursor:pointer;transition:all .2s}
+.btn-generate:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(201,168,76,.3)}
+.btn-generate:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.progress-wrap{display:none;margin-top:20px}
+.progress-wrap.show{display:block}
+.progress-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;width:0%;transition:width .3s}
+.progress-msg{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center}
+.result-card{background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.3);border-radius:var(--radius);padding:24px;margin-top:20px;display:none;text-align:center}
+.result-card.show{display:block}
+.result-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--gold);margin-bottom:16px}
+.download-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-dl{padding:12px 28px;border-radius:8px;font-family:'Syne',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn-dl-word{background:var(--gold);color:#0d0f14;border:none}
+.btn-dl:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,168,76,.25)}
+.error-msg{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:14px 18px;color:#ef4444;font-size:13px;margin-top:16px;display:none}
+.error-msg.show{display:block}
+@media(max-width:600px){.header{padding:16px 20px}.main{padding:24px 16px 60px}.grid-2,.grid-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-logo">FF</div>
+  <div class="header-title">DPR Generator</div>
+  <div class="header-sub">First Fix × MBL</div>
+</div>
+<div class="main">
+  <div class="section-label">Report Information</div>
+  <div class="card">
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="field"><label>Report Date</label><input type="date" id="reportDate"/></div>
+      <div class="field"><label>Report Number</label><input type="text" id="reportNo" placeholder="e.g. 176"/></div>
+      <div class="field"><label>Package</label><input type="text" id="package" value="MEP"/></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Supervision <span class="badge">e.g. 2+8</span></label><input type="text" id="supervision" placeholder="2+8"/></div>
+      <div class="field"><label>Labors (Total)</label><input type="number" id="labors" placeholder="100"/></div>
+    </div>
+  </div>
+  <div class="section-label">Foreman Excel Files</div>
+  <div class="card">
+    <div class="drop-zone" id="excelDrop">
+      <input type="file" id="excelInput" accept=".xlsx,.xls" multiple/>
+      <div class="drop-icon">📊</div>
+      <div class="drop-title">Drop Excel files here</div>
+      <div class="drop-sub">or click to browse — supports multiple files</div>
+    </div>
+    <div class="file-list" id="excelList"></div>
+  </div>
+  <div class="section-label">Site Photos</div>
+  <div class="card">
+    <div class="drop-zone" id="photoDrop">
+      <input type="file" id="photoInput" accept="image/*" multiple/>
+      <div class="drop-icon">📸</div>
+      <div class="drop-title">Drop site photos here</div>
+      <div class="drop-sub">or click to browse — JPG, PNG supported</div>
+    </div>
+    <div class="photo-grid" id="photoGrid"></div>
+  </div>
+  <button class="btn-generate" id="generateBtn" onclick="generate()">⚡ Generate Daily Report</button>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-msg" id="progressMsg">Reading files...</div>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="result-card" id="resultCard">
+    <div class="result-title">✅ Report Ready!</div>
+    <div class="download-btns">
+      <a class="btn-dl btn-dl-word" id="dlWord" href="#" download>⬇ Download Word (.docx)</a>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:var(--muted)">Open in Word → File → Save As → PDF to get PDF version</p>
+  </div>
+</div>
+<script>
+let excelFiles=[], photoFiles=[];
+
+// Default date to yesterday
+const y=new Date(); y.setDate(y.getDate()-1);
+document.getElementById('reportDate').value=y.toISOString().split('T')[0];
+
+// Excel
+const excelInput=document.getElementById('excelInput');
+const excelDrop=document.getElementById('excelDrop');
+const excelList=document.getElementById('excelList');
+excelInput.addEventListener('change',e=>addExcel([...e.target.files]));
+excelDrop.addEventListener('dragover',e=>{e.preventDefault();excelDrop.classList.add('drag-over')});
+excelDrop.addEventListener('dragleave',()=>excelDrop.classList.remove('drag-over'));
+excelDrop.addEventListener('drop',e=>{e.preventDefault();excelDrop.classList.remove('drag-over');addExcel([...e.dataTransfer.files].filter(f=>f.name.match(/\.xlsx?$/i)))});
+function addExcel(files){files.forEach(f=>{if(!excelFiles.find(x=>x.name===f.name))excelFiles.push(f)});renderExcelList()}
+function renderExcelList(){excelList.innerHTML=excelFiles.map((f,i)=>`<div class="file-item"><span class="fi-icon">📄</span><span class="fi-name">${f.name}</span><button class="fi-remove" onclick="removeExcel(${i})">✕</button></div>`).join('')}
+function removeExcel(i){excelFiles.splice(i,1);renderExcelList()}
+
+// Photos
+const photoInput=document.getElementById('photoInput');
+const photoDrop=document.getElementById('photoDrop');
+const photoGrid=document.getElementById('photoGrid');
+photoInput.addEventListener('change',e=>addPhotos([...e.target.files]));
+photoDrop.addEventListener('dragover',e=>{e.preventDefault();photoDrop.classList.add('drag-over')});
+photoDrop.addEventListener('dragleave',()=>photoDrop.classList.remove('drag-over'));
+photoDrop.addEventListener('drop',e=>{e.preventDefault();photoDrop.classList.remove('drag-over');addPhotos([...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')))});
+function addPhotos(files){files.forEach(f=>{if(!photoFiles.find(x=>x.name===f.name))photoFiles.push(f)});renderPhotoGrid()}
+function renderPhotoGrid(){photoGrid.innerHTML='';photoFiles.forEach((f,i)=>{const url=URL.createObjectURL(f);const div=document.createElement('div');div.className='photo-thumb';div.innerHTML=`<img src="${url}"/><button class="ph-remove" onclick="removePhoto(${i})">✕</button>`;photoGrid.appendChild(div)})}
+function removePhoto(i){photoFiles.splice(i,1);renderPhotoGrid()}
+
+function setProgress(pct,msg){document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressMsg').textContent=msg}
+function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.classList.add('show')}
+
+// Parse Excel
+function readFileAsArrayBuffer(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsArrayBuffer(file)})}
+function readFileAsDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(file)})}
+
+function parseExcel(ab){
+  const wb=XLSX.read(ab,{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  const activities=[],nextDay=[];
+  let section=null,headerRow=null;
+  for(let i=0;i<raw.length;i++){
+    const row=raw[i];
+    const c0=String(row[0]||'').trim();
+    if(c0==="Today's Activities"){section='today';headerRow=null;continue}
+    if(c0==="Next Day Activities"){section='next';headerRow=null;continue}
+    if(!section)continue;
+    const rowStr=row.map(v=>String(v).toLowerCase()).join('|');
+    if(!headerRow&&(rowStr.includes('zone')||rowStr.includes('level'))){headerRow=row.map(v=>String(v).trim().toLowerCase());continue}
+    if(!headerRow)continue;
+    const num=String(row[0]).trim();
+    if(!num||isNaN(parseFloat(num)))continue;
+    const get=key=>{const idx=headerRow.findIndex(h=>h.includes(key));return idx>=0?String(row[idx]||'').trim():''};
+    const zone=get('zone'),level=get('level'),discipline=get('discipline')||get('disc'),system=get('system');
+    let work=get('type')||get('work');
+    const qty=get('qty')||get('quantity'),unit=get('unit'),remark=get('remark')||get('remarks');
+    if(!work&&remark)work=remark;
+    if(!work)continue;
+    const entry={zone,level,discipline,system:system||'General',work,qty,unit};
+    if(section==='today')activities.push(entry);
+    if(section==='next')nextDay.push(entry);
+  }
+  return{activities,nextDay};
+}
+
+// Build DOCX
+async function buildDocx(data){
+  const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,ImageRun,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign}=docx;
+
+  const GOLD="C9A84C",DARK_BLUE="1F3864",LIGHT_BLUE="D6E4F0",WHITE="FFFFFF",LGRAY="F2F2F2",TEXT_DARK="1A1A1A";
+  const PAGE_W=11906,PAGE_H=16838,MARGIN=576,CW=PAGE_W-(MARGIN*2);
+  const BD={style:BorderStyle.SINGLE,size:1,color:"CCCCCC"};
+  const BDS={top:BD,bottom:BD,left:BD,right:BD};
+  const NB={style:BorderStyle.NONE,size:0,color:"FFFFFF"};
+  const NBDS={top:NB,bottom:NB,left:NB,right:NB};
+
+  function mc(text,o={}){
+    const{bold=false,color=TEXT_DARK,bg=WHITE,align=AlignmentType.LEFT,size=15,colspan=1,rowspan=1,valign=VerticalAlign.CENTER,w=null,bds=BDS}=o;
+    return new TableCell({columnSpan:colspan,rowSpan:rowspan,verticalAlign:valign,
+      width:w?{size:w,type:WidthType.DXA}:undefined,
+      shading:{fill:bg,type:ShadingType.CLEAR},
+      margins:{top:50,bottom:50,left:80,right:80},borders:bds,
+      children:[new Paragraph({alignment:align,spacing:{before:0,after:0},
+        children:[new TextRun({text:String(text??''),bold,color,size,font:"Arial"})]})]});
+  }
+  function hc(text,o={}){return mc(text,{bold:true,color:WHITE,bg:DARK_BLUE,align:AlignmentType.CENTER,size:15,...o})}
+  function banner(label){
+    return new Table({width:{size:CW,type:WidthType.DXA},columnWidths:[CW],
+      rows:[new TableRow({children:[new TableCell({shading:{fill:GOLD,type:ShadingType.CLEAR},borders:BDS,
+        margins:{top:80,bottom:80,left:140,right:140},
+        children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:label,bold:true,color:WHITE,size:18,font:"Arial"})]})]})]})]})}
+  const sp=(pts=70)=>new Paragraph({spacing:{before:pts,after:0},children:[]});
+  function groupActs(acts){const out=[];let cur=null;for(const r of acts){if(!cur||r.system!==cur.system){cur={system:r.system,rows:[]};out.push(cur)}cur.rows.push(r)}return out}
+  const AC=[1500,1400,700,1800,3754,700,900];
+  function buildActTable(rows){
+    const groups=groupActs(rows);
+    const tRows=[new TableRow({tableHeader:true,children:[hc("SYSTEM",{w:AC[0]}),hc("ZONE",{w:AC[1]}),hc("LEVEL",{w:AC[2]}),hc("DISCIPLINE",{w:AC[3]}),hc("TYPE OF WORK",{w:AC[4]}),hc("QTY",{w:AC[5],align:AlignmentType.CENTER}),hc("UNIT",{w:AC[6],align:AlignmentType.CENTER})]})];
+    for(const grp of groups){
+      const cnt=grp.rows.length;
+      grp.rows.forEach((row,i)=>{
+        const cells=[];
+        if(i===0){cells.push(new TableCell({rowSpan:cnt,verticalAlign:VerticalAlign.CENTER,
+          shading:{fill:LIGHT_BLUE,type:ShadingType.CLEAR},borders:BDS,
+          width:{size:AC[0],type:WidthType.DXA},margins:{top:50,bottom:50,left:80,right:80},
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:grp.system,bold:true,size:15,font:"Arial",color:DARK_BLUE})]})]}));
+        }
+        cells.push(mc(row.zone,{size:15,w:AC[1]}));
+        cells.push(mc(row.level,{size:15,align:AlignmentType.CENTER,w:AC[2]}));
+        cells.push(mc(row.discipline,{size:15,w:AC[3]}));
+        cells.push(mc(row.work,{size:15,w:AC[4]}));
+        cells.push(mc(row.qty||'',{size:15,align:AlignmentType.CENTER,w:AC[5]}));
+        cells.push(mc(row.unit||'',{size:15,align:AlignmentType.CENTER,w:AC[6]}));
+        tRows.push(new TableRow({children:cells}));
+      });
+    }
+    return new Table({width:{size:CW,type:WidthType.DXA},columnWidths:AC,rows:tRows});
+  }
+
+  const ch=[];
+  const d=new Date(data.date);
+  const dateStr=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+
+  // Logo
+  if(data.logoData){
+    const b64=data.logoData.split(',')[1];
+    const bin=atob(b64);
+    const buf=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+    ch.push(new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:130},
+      children:[new ImageRun({data:buf,type:"png",transformation:{width:370,height:70}})]}));
+  }
+
+  // General Info
+  const gi=[2100,3900,1754,3000];
+  ch.push(new Table({width:{size:CW,type:WidthType.DXA},columnWidths:gi,rows:[
+    new TableRow({children:[mc("Contractor / SubCont.",{bold:true,bg:LGRAY,size:14,w:gi[0]}),mc("MBL / First Fix",{size:14,w:gi[1]}),mc("Package",{bold:true,bg:LGRAY,size:14,w:gi[2]}),mc(data.pkg,{size:14,w:gi[3]})]}),
+    new TableRow({children:[mc("Client",{bold:true,bg:LGRAY,size:14,w:gi[0]}),mc("Jeddah Central Development Co.",{size:14,w:gi[1]}),mc("Subcontract Ref.",{bold:true,bg:LGRAY,size:14,w:gi[2]}),mc("P1020096-OCN-014",{size:14,w:gi[3]})]})
+  ]}));
+  ch.push(sp(90));
+
+  // Date/Report/Manpower + Title
+  const leftW=4800,titleW=CW-4800;
+  ch.push(new Table({width:{size:CW,type:WidthType.DXA},columnWidths:[leftW,titleW],
+    rows:[new TableRow({children:[
+      new TableCell({verticalAlign:VerticalAlign.CENTER,shading:{fill:WHITE,type:ShadingType.CLEAR},borders:BDS,
+        width:{size:leftW,type:WidthType.DXA},margins:{top:0,bottom:0,left:0,right:0},
+        children:[new Table({width:{size:leftW,type:WidthType.DXA},columnWidths:[1700,3100],rows:[
+          new TableRow({children:[mc("Date",{bold:true,bg:LGRAY,size:16,w:1700}),mc(dateStr,{size:16,w:3100})]}),
+          new TableRow({children:[mc("Report No",{bold:true,bg:LGRAY,size:16,w:1700}),mc(data.reportNo,{size:16,w:3100})]}),
+          new TableRow({children:[mc("Manpower",{bold:true,bg:LGRAY,align:AlignmentType.CENTER,size:16,colspan:2,w:4800})]}),
+          new TableRow({children:[mc("Supervision",{bold:true,bg:LGRAY,align:AlignmentType.CENTER,size:15,w:1700}),mc(String(data.supervision),{align:AlignmentType.CENTER,size:16,bold:true,w:3100})]}),
+          new TableRow({children:[mc("Labors",{bold:true,bg:LGRAY,align:AlignmentType.CENTER,size:15,w:1700}),mc(String(data.labors),{align:AlignmentType.CENTER,size:16,bold:true,w:3100})]}),
+        ]})]
+      }),
+      new TableCell({verticalAlign:VerticalAlign.CENTER,shading:{fill:WHITE,type:ShadingType.CLEAR},borders:BDS,
+        width:{size:titleW,type:WidthType.DXA},margins:{top:70,bottom:70,left:100,right:100},
+        children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:"Daily Site Work Report",bold:true,size:28,color:DARK_BLUE,font:"Arial"})]})]}),
+    ]})]
+  }));
+
+  ch.push(sp(100));
+  ch.push(banner("DAILY SITE ACTIVITIES"));
+  ch.push(sp(50));
+  ch.push(new Paragraph({spacing:{before:30,after:50},children:[new TextRun({text:"MECHANICAL PROGRESS",bold:true,size:16,color:DARK_BLUE,font:"Arial"})]}));
+  ch.push(buildActTable(data.activities));
+  ch.push(sp(100));
+  ch.push(banner("next day activities"));
+  ch.push(sp(50));
+  if(data.nextDay.length>0){ch.push(buildActTable(data.nextDay))}
+  else{ch.push(new Paragraph({spacing:{before:40,after:40},children:[new TextRun({text:"To be updated",size:15,color:"999999",italics:true,font:"Arial"})]}))}
+  ch.push(sp(100));
+  ch.push(banner("PHOTOS"));
+  ch.push(sp(70));
+
+  const photoW=Math.floor(CW/2);
+  for(let i=0;i<data.photos.length;i+=2){
+    const cells=[];
+    for(let j=i;j<Math.min(i+2,data.photos.length);j++){
+      const p=data.photos[j];
+      const b64=p.dataUrl.split(',')[1];
+      const bin=atob(b64);
+      const buf=new Uint8Array(bin.length);
+      for(let k=0;k<bin.length;k++)buf[k]=bin.charCodeAt(k);
+      const ext=p.name.split('.').pop().toLowerCase();
+      cells.push(new TableCell({borders:NBDS,width:{size:photoW,type:WidthType.DXA},
+        margins:{top:50,bottom:50,left:50,right:50},
+        children:[new Paragraph({alignment:AlignmentType.CENTER,
+          children:[new ImageRun({data:buf,type:ext==='jpg'||ext==='jpeg'?'jpeg':'png',transformation:{width:250,height:188}})]})]
+      }));
+    }
+    if(cells.length===1)cells.push(new TableCell({borders:NBDS,width:{size:photoW,type:WidthType.DXA},children:[new Paragraph({children:[]})]}));
+    ch.push(new Table({width:{size:CW,type:WidthType.DXA},columnWidths:[photoW,photoW],rows:[new TableRow({children:cells})]}));
+    ch.push(sp(40));
+  }
+
+  const doc=new Document({
+    styles:{default:{document:{run:{font:"Arial",size:15,color:TEXT_DARK}}}},
+    sections:[{properties:{page:{size:{width:PAGE_W,height:PAGE_H},margin:{top:MARGIN,right:MARGIN,bottom:MARGIN,left:MARGIN}}},children:ch}]
+  });
+  return Packer.toBlob(doc);
+}
+
+async function generate(){
+  const date=document.getElementById('reportDate').value;
+  const reportNo=document.getElementById('reportNo').value.trim();
+  const supervision=document.getElementById('supervision').value.trim();
+  const labors=document.getElementById('labors').value.trim();
+  const pkg=document.getElementById('package').value.trim();
+
+  document.getElementById('errorMsg').classList.remove('show');
+  document.getElementById('resultCard').classList.remove('show');
+  if(!date)return showError('Please enter the report date.');
+  if(!reportNo)return showError('Please enter the report number.');
+  if(!supervision)return showError('Please enter supervision count.');
+  if(!labors)return showError('Please enter labor count.');
+  if(excelFiles.length===0)return showError('Please upload at least one Excel file.');
+
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('generateBtn').disabled=true;
+  setProgress(10,'Reading Excel files...');
+
+  try{
+    // Parse Excel
+    let activities=[],nextDay=[];
+    for(const f of excelFiles){
+      const ab=await readFileAsArrayBuffer(f);
+      const parsed=parseExcel(ab);
+      activities=activities.concat(parsed.activities);
+      nextDay=nextDay.concat(parsed.nextDay);
+    }
+    setProgress(40,'Loading photos...');
+
+    // Read photos
+    const photos=[];
+    for(const f of photoFiles){
+      const dataUrl=await readFileAsDataURL(f);
+      photos.push({name:f.name,dataUrl});
+    }
+    setProgress(60,'Building report...');
+
+    // Logo — fetch from same origin
+    let logoData=null;
+    try{
+      const resp=await fetch('logo.png');
+      const blob=await resp.blob();
+      logoData=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(blob)});
+    }catch(e){}
+
+    const blob=await buildDocx({date,reportNo,supervision,labors,pkg,activities,nextDay,photos,logoData});
+    setProgress(100,'Done!');
+
+    const url=URL.createObjectURL(blob);
+    const dl=document.getElementById('dlWord');
+    dl.href=url;
+    dl.download=`DPR_${reportNo}.docx`;
+    document.getElementById('resultCard').classList.add('show');
+  }catch(e){
+    showError('Error: '+e.message);
+    console.error(e);
+  }finally{
+    document.getElementById('generateBtn').disabled=false;
+    setTimeout(()=>{document.getElementById('progressWrap').classList.remove('show');setProgress(0,'')},2000);
+  }
+}
+</script>
+</body>
+</html>
